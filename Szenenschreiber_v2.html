@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SZENENSCHREIBER v2 — Oliver Weßling</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f0ede6;
+    --panel: #fefcf8;
+    --panel-alt: #f5f2eb;
+    --border: #ccc8bc;
+    --gold: #7a5a0a;
+    --green: #1a5a3a;
+    --red: #7a1010;
+    --blue: #0a3a6a;
+    --purple: #4a0a7a;
+    --text: #0a0806;
+    --muted: #3a3228;
+    --dim: #5a5248;
+    --dimmer: #8a8278;
+    --shadow: rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--gold);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .header-sub {
+    color: var(--dimmer);
+    font-size: 0.75rem;
+    font-style: italic;
+    margin-top: 0.1rem;
+  }
+  .header-badge {
+    background: var(--purple);
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .main { max-width: 960px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+  /* API KEY */
+  .api-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--purple);
+    border-radius: 8px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .api-label {
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--purple);
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .api-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .api-input {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.6rem 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--panel-alt);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .api-input:focus { border-color: var(--purple); }
+  .api-hint {
+    font-size: 0.72rem;
+    color: var(--dimmer);
+    margin-top: 0.4rem;
+    font-style: italic;
+  }
+  .api-ok {
+    color: var(--green);
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* TWO COLUMN LAYOUT */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    margin-bottom: 1.2rem;
+  }
+
+  /* UPLOAD ZONES */
+  .upload-box {
+    background: var(--panel);
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 1px 4px var(--shadow);
+    position: relative;
+  }
+  .upload-box:hover { border-color: var(--gold); background: #fdf9f0; }
+  .upload-box.loaded { border-color: var(--green); border-style: solid; background: #f0faf4; }
+  .upload-box .icon { font-size: 2rem; margin-bottom: 0.4rem; opacity: 0.35; transition: opacity 0.15s; }
+  .upload-box.loaded .icon { opacity: 1; }
+  .upload-box .label { font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; font-weight: 600; color: var(--dim); }
+  .upload-box.loaded .label { color: var(--green); }
+  .upload-box .hint { font-size: 0.72rem; color: var(--dimmer); margin-top: 0.2rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dz-remove {
+    position: absolute; top: 6px; right: 8px;
+    background: none; border: none; color: var(--dimmer);
+    font-size: 0.9rem; cursor: pointer; padding: 2px 5px;
+    border-radius: 3px; display: none; transition: all 0.1s;
+  }
+  .upload-box.loaded .dz-remove { display: block; }
+  .dz-remove:hover { color: #fff; background: var(--red); }
+
+  /* FEHLER EINGABE */
+  .fehler-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .fehler-label {
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+  }
+  .fehler-textarea {
+    width: 100%;
+    min-height: 160px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.8rem 1rem;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--panel-alt);
+    resize: vertical;
+    outline: none;
+    line-height: 1.7;
+    transition: border-color 0.15s;
+  }
+  .fehler-textarea:focus { border-color: var(--red); }
+  .fehler-hint {
+    font-size: 0.72rem;
+    color: var(--dimmer);
+    margin-top: 0.4rem;
+    font-style: italic;
+  }
+
+  /* MODUS AUSWAHL */
+  .modus-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .modus-label {
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+  }
+  .modus-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+  .modus-btn {
+    border: 1px solid var(--border);
+    background: var(--panel-alt);
+    border-radius: 6px;
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: 'Source Serif 4', serif;
+  }
+  .modus-btn:hover { border-color: var(--gold); }
+  .modus-btn.active { border-color: var(--gold); background: var(--gold)18; }
+  .modus-btn .m-icon { font-size: 1.3rem; margin-bottom: 0.2rem; }
+  .modus-btn .m-name { font-size: 0.75rem; font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .modus-btn .m-desc { font-size: 0.68rem; color: var(--dimmer); margin-top: 0.1rem; }
+  .modus-btn.active .m-name { color: var(--gold); }
+
+  /* START BUTTON */
+  .btn-start {
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    padding: 1rem 3.5rem;
+    font-size: 1rem;
+    font-family: 'Playfair Display', serif;
+    cursor: pointer;
+    border-radius: 7px;
+    letter-spacing: 0.1em;
+    box-shadow: 0 3px 12px rgba(122,90,10,0.35);
+    transition: all 0.15s;
+    font-weight: 600;
+    display: block;
+    margin: 1.5rem auto 0;
+  }
+  .btn-start:hover { background: #a47810; transform: translateY(-1px); box-shadow: 0 5px 16px rgba(122,90,10,0.4); }
+  .btn-start:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* FORTSCHRITT */
+  .progress-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.4rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 1px 4px var(--shadow);
+  }
+  .progress-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+  }
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 4px;
+    height: 6px;
+    margin-bottom: 0.8rem;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), #c4970e);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  .progress-log {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    max-height: 150px;
+    overflow-y: auto;
+    line-height: 1.8;
+  }
+  .progress-log .log-ok { color: var(--green); }
+  .progress-log .log-err { color: var(--red); }
+
+  /* ERGEBNIS */
+  .result-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: 8px;
+    padding: 1.4rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--green);
+    margin-bottom: 0.6rem;
+  }
+  .result-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .result-preview {
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1rem;
+    font-size: 0.88rem;
+    line-height: 1.8;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+  .result-buttons {
+    display: flex;
+    gap: 0.8rem;
+  }
+  .btn-download {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    padding: 0.7rem 2rem;
+    font-size: 0.85rem;
+    font-family: 'Playfair Display', serif;
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(26,90,58,0.3);
+    transition: all 0.12s;
+  }
+  .btn-download:hover { background: #0f4a2a; }
+  .btn-secondary {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.7rem 1.5rem;
+    font-size: 0.85rem;
+    font-family: 'Source Serif 4', serif;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.12s;
+  }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ERROR */
+  .error-box {
+    background: #fdf0f0;
+    border: 1px solid #e8b8b8;
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    color: var(--red);
+    font-size: 0.85rem;
+    margin-top: 1rem;
+    line-height: 1.7;
+  }
+
+  input[type=file] { display: none; }
+
+  .section-title {
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--dimmer);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
+    margin-top: 1.4rem;
+  }
+
+  .info-strip {
+    display: flex;
+    gap: 1.5rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+  }
+  .info-strip span { color: var(--dim); }
+  .info-strip strong { color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">SZENENSCHREIBER</div>
+    <div class="header-sub">KI-gestützte Manuskript-Korrektur · Oliver Weßling</div>
+  </div>
+  <div class="header-badge">✦ CLAUDE API</div>
+</div>
+
+<div class="main">
+
+  <!-- API SCHLÜSSEL -->
+  <div class="api-section">
+    <div class="api-label">🔑 CLAUDE API-SCHLÜSSEL</div>
+    <div class="api-row">
+      <input type="password" class="api-input" id="apiKey" placeholder="sk-ant-api03-..." oninput="checkApi()">
+      <button onclick="testApi()" style="background:var(--purple);color:#fff;border:none;padding:0.6rem 1.2rem;border-radius:5px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:0.8rem;white-space:nowrap">Testen</button>
+      <span class="api-ok" id="apiOk" style="display:none">✓ Gültig</span>
+    </div>
+    <div class="api-hint">Schlüssel von <strong>console.anthropic.com</strong> · Klicke "Testen" um zu prüfen ob er funktioniert.</div>
+    <div id="apiError" style="display:none;color:var(--red);font-size:0.8rem;margin-top:0.4rem"></div>
+  </div>
+
+  <!-- UPLOADS -->
+  <div class="section-title">Dateien hochladen</div>
+  <div class="two-col">
+    <div class="upload-box" id="dz-man" onclick="dzClick(event,'man')" ondrop="handleDrop(event,'man')" ondragover="ev(event,true)" ondragleave="ev(event,false)">
+      <button class="dz-remove" onclick="removeFile(event,'man')">✕</button>
+      <input type="file" id="inp-man" accept=".docx,.txt,.md" onchange="handleFile(this.files[0],'man')">
+      <div class="icon">📖</div>
+      <div class="label">MANUSKRIPT</div>
+      <div class="hint">.docx · .txt · .md</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.8rem">
+      <div style="font-size:0.8rem;color:var(--muted);line-height:1.7;padding:0.5rem">
+        <strong style="color:var(--gold);font-family:'JetBrains Mono',monospace">SO GEHST DU VOR:</strong><br>
+        1. API-Schlüssel eingeben<br>
+        2. Manuskript hochladen<br>
+        3. Fehler aus Szenenlogik einfügen<br>
+        4. Modus wählen<br>
+        5. Umschreiben starten<br>
+        6. Word-Dokument herunterladen
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUSKRIPT INFO -->
+  <div class="info-strip" id="manInfo" style="display:none">
+    <span>Kapitel: <strong id="infoKap">—</strong></span>
+    <span>Absätze: <strong id="infoAbs">—</strong></span>
+    <span>Wörter: <strong id="infoWoe">—</strong></span>
+  </div>
+
+  <!-- FEHLER EINGABE -->
+  <div class="section-title">Fehler aus Szenenlogik einfügen</div>
+  <div class="fehler-box">
+    <div class="fehler-label">📋 GEFUNDENE FEHLER (aus Szenenlogik kopiert)</div>
+    <textarea class="fehler-textarea" id="fehlerText"
+      placeholder="Hier die kopierten Fehler aus dem Szenenlogik-Programm einfügen.
+
+Beispiel:
+🔴 M2: als würde/hätte/wäre — Kap. 9 (2×)
+Fundstelle 1: als hättest du mit dem Teufel getanzt
+Fundstelle 2: als hättest du die ganze Nacht Steine geklopft
+
+🟡 M15: Monotoner Satzbau — Kap. 1 (4×)
+Fundstelle 1: Klara schob den massiven Eisenriegel..."></textarea>
+    <div class="fehler-hint">Kopiere den Tab-Inhalt direkt aus dem Szenenlogik-Programm (Kopieren-Button oben rechts).</div>
+  </div>
+
+  <!-- MODUS -->
+  <div class="section-title">Korrektur-Modus wählen</div>
+  <div class="modus-box">
+    <div class="modus-label">WAS SOLL DER SZENENSCHREIBER TUN?</div>
+    <div class="modus-grid">
+      <div class="modus-btn active" onclick="setModus('ki',this)">
+        <div class="m-icon">🤖</div>
+        <div class="m-name">KI-FEHLER</div>
+        <div class="m-desc">als würde, Körperteile, Metaphern</div>
+      </div>
+      <div class="modus-btn" onclick="setModus('stil',this)">
+        <div class="m-icon">✍️</div>
+        <div class="m-name">STILFEHLER</div>
+        <div class="m-desc">Satzbau, Rhythmus, Dialog-Tags</div>
+      </div>
+      <div class="modus-btn" onclick="setModus('alle',this)">
+        <div class="m-icon">⚡</div>
+        <div class="m-name">ALLE FEHLER</div>
+        <div class="m-desc">Komplett-Durchgang</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- START -->
+  <button class="btn-start" id="startBtn" onclick="starten()" disabled>▶ UMSCHREIBEN STARTEN</button>
+
+  <!-- FORTSCHRITT -->
+  <div class="progress-section" id="progressSection" style="display:none">
+    <div class="progress-title">Wird umgeschrieben...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    <div class="progress-log" id="progressLog"></div>
+  </div>
+
+  <!-- FEHLER -->
+  <div class="error-box" id="errorBox" style="display:none"></div>
+
+  <!-- ERGEBNIS -->
+  <div class="result-section" id="resultSection" style="display:none">
+    <div class="result-title">✓ Umschreiben abgeschlossen</div>
+    <div class="result-stats" id="resultStats"></div>
+    <div class="result-preview" id="resultPreview"></div>
+    <div class="result-buttons">
+      <button class="btn-download" onclick="downloadDocx()">📄 Als Word herunterladen</button>
+      <button class="btn-secondary" onclick="nochmal()">↺ Neu starten</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let state = {
+  manText: '',
+  manFile: null,
+  manParsed: [],
+  kapitel: 0,
+  modus: 'ki',
+  ergebnis: '',
+  aenderungen: 0
+};
+
+// ═══════════════════════════════════════════════════════
+// API CHECK
+// ═══════════════════════════════════════════════════════
+async function testApi() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const okEl = document.getElementById('apiOk');
+  const errEl = document.getElementById('apiError');
+  okEl.style.display = 'none';
+  errEl.style.display = 'none';
+  errEl.textContent = '⏳ Wird geprüft...';
+  errEl.style.display = '';
+  errEl.style.color = 'var(--muted)';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 10,
+        messages: [{ role: 'user', content: 'Hi' }]
+      })
+    });
+    if(resp.ok) {
+      okEl.style.display = '';
+      okEl.textContent = '✓ Schlüssel gültig';
+      errEl.style.display = 'none';
+      checkReady();
+    } else {
+      const err = await resp.json();
+      errEl.textContent = '✗ ' + (err.error?.message || 'Ungültiger Schlüssel');
+      errEl.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    errEl.textContent = '✗ Verbindungsfehler: ' + e.message;
+    errEl.style.color = 'var(--red)';
+  }
+}
+
+function checkApi() {
+  const key = document.getElementById('apiKey').value.trim();
+  document.getElementById('apiOk').style.display = 'none';
+  document.getElementById('apiError').style.display = 'none';
+  checkReady();
+}
+
+function checkReady() {
+  const key = document.getElementById('apiKey').value.trim();
+  const hasKey = key.startsWith('sk-ant-') && key.length > 20;
+  const hasMan = state.manText.length > 100;
+  document.getElementById('startBtn').disabled = !(hasKey && hasMan);
+}
+
+// ═══════════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════════
+function ev(e, over) { e.preventDefault(); e.currentTarget.classList.toggle('active', over); }
+function dzClick(e, typ) { if(!e.target.classList.contains('dz-remove')) document.getElementById('inp-'+typ).click(); }
+function handleDrop(e, typ) { e.preventDefault(); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], typ); }
+
+async function handleFile(file, typ) {
+  if(!file) return;
+  const text = await readFile(file);
+  if(typ === 'man') {
+    state.manFile = file;
+    state.manText = text;
+    const parsed = parseManuscript(text);
+    state.manParsed = parsed;
+    state.kapitel = parsed.length > 0 ? Math.max(...parsed.map(a => a.kapitel)) : 0;
+    const woe = text.split(/\s+/).length;
+    document.getElementById('dz-man').classList.add('loaded');
+    document.getElementById('dz-man').querySelector('.hint').textContent = file.name;
+    document.getElementById('infoKap').textContent = state.kapitel;
+    document.getElementById('infoAbs').textContent = parsed.length;
+    document.getElementById('infoWoe').textContent = '~' + woe.toLocaleString('de');
+    document.getElementById('manInfo').style.display = 'flex';
+    checkReady();
+  }
+}
+
+async function readFile(file) {
+  if(file.name.endsWith('.docx')) {
+    const ab = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: ab });
+    return result.value;
+  }
+  return await file.text();
+}
+
+function removeFile(e, typ) {
+  e.stopPropagation();
+  if(typ === 'man') {
+    state.manText = ''; state.manFile = null; state.manParsed = []; state.kapitel = 0;
+    document.getElementById('manInfo').style.display = 'none';
+  }
+  const dz = document.getElementById('dz-' + typ);
+  dz.classList.remove('loaded');
+  dz.querySelector('.hint').textContent = typ === 'man' ? '.docx · .txt · .md' : '';
+  document.getElementById('inp-' + typ).value = '';
+  checkReady();
+}
+
+function parseManuscript(text) {
+  const absaetze = [];
+  let kapitel = 0, absatzId = 0, buf = [];
+  const flush = () => {
+    const p = buf.join(' ').replace(/\s+/g, ' ').trim();
+    if(p.length > 15 && kapitel > 0) { absatzId++; absaetze.push({ id: absatzId, kapitel, text: p }); }
+    buf = [];
+  };
+  for(const raw of text.split(/\n/)) {
+    const line = raw.trim();
+    if(!line) { flush(); continue; }
+    if(/^(Kapitel|Chapter|KAPITEL|Kap\.)\s+\d+/i.test(line)) { flush(); kapitel++; continue; }
+    if(kapitel === 0) continue;
+    buf.push(line);
+  }
+  flush();
+  return absaetze;
+}
+
+// ═══════════════════════════════════════════════════════
+// MODUS
+// ═══════════════════════════════════════════════════════
+function setModus(m, btn) {
+  state.modus = m;
+  document.querySelectorAll('.modus-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// HAUPT-ANALYSE & UMSCHREIBEN
+// ═══════════════════════════════════════════════════════
+async function starten() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const fehlerText = document.getElementById('fehlerText').value.trim();
+
+  if(!apiKey || !state.manText) return;
+
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('errorBox').style.display = 'none';
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('progressSection').style.display = '';
+  setProgress(5, 'Manuskript wird vorbereitet...');
+
+  try {
+    // Manuskript in Kapitel aufteilen
+    const kapitel = aufteilen(state.manText);
+    log(`📖 ${kapitel.length} Kapitel gefunden`);
+
+    // Prompt bauen
+    const modusText = {
+      ki: 'KI-typische Stilmuster (als würde, autonome Körperteile, Metaphern, Wärme/Kälte als Emotion, Echo-Wiederholung)',
+      stil: 'Stilfehler (monotoner Satzbau, Dialog-Tags mit Adverb, weiche Szenenausstiege)',
+      alle: 'alle Stil- und KI-Fehler'
+    }[state.modus];
+
+    const systemPrompt = `Du bist ein literarischer Lektor der Romane überarbeitet.
+
+STIL-REGELN — IMMER EINHALTEN:
+- Kurze, präzise Sätze. Kein Schachtelsatz.
+- Zeigen statt Erklären. Keine Zusammenfassungen.
+- Kein "als würde/wäre/hätte" als Vergleich.
+- Keine autonomen Körperteile ("seine Hände fanden").
+- Kein "etwas in ihm/ihr".
+- Keine Wärme/Kälte als Emotionsmetapher.
+- Keine Echo-Wiederholung (gleiches Wort Satzende = Satzanfang).
+- Keine Dialog-Tags mit Adverb (sagte er leise → Handlung zeigt den Ton).
+- Kein "und doch" / "und dennoch".
+- Kein "in diesem Moment" als Emphase.
+- Keine vage Atmosphäre ("irgendetwas stimmte nicht").
+- Letzte Sätze von Szenen = Bild oder Handlung, nie Reflexion.
+
+AUFGABE:
+Schreibe die markierten Stellen um. Behalte den Inhalt. Ändere nur den Stil.
+Antworte NUR mit dem überarbeiteten Text. Keine Kommentare.`;
+
+    const gesamtKapitel = kapitel.length;
+    let ergebnisText = '';
+    let aenderungen = 0;
+
+    for(let i = 0; i < kapitel.length; i++) {
+      const kap = kapitel[i];
+      const pct = 10 + Math.round((i / gesamtKapitel) * 85);
+      setProgress(pct, `Kapitel ${i+1} von ${gesamtKapitel} wird überarbeitet...`);
+      await sleep(0);
+
+      // Relevante Fehler für dieses Kapitel filtern
+      const kapFehler = fehlerText
+        ? fehlerText.split('\n').filter(l =>
+            l.includes(`Kap. ${i+1}`) || l.includes(`Kapitel ${i+1}`) ||
+            !l.match(/Kap\.\s*\d+/) // Allgemeine Hinweise immer
+          ).join('\n')
+        : '';
+
+      const userPrompt = `KAPITEL ${i+1}:
+
+${kap.text}
+
+${kapFehler ? `\nGEFUNDENE FEHLER IN DIESEM KAPITEL:\n${kapFehler}\n` : ''}
+Überarbeite den Text und korrigiere: ${modusText}.
+Behalte alle Dialoge und Handlungen. Nur Stil ändern.`;
+
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-5',
+          max_tokens: 4000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }]
+        })
+      });
+
+      if(!resp.ok) {
+        const err = await resp.json();
+        throw new Error(`API Fehler: ${err.error?.message || resp.status}`);
+      }
+
+      const data = await resp.json();
+      const ueberarbeitet = data.content?.[0]?.text || kap.text;
+
+      ergebnisText += `Kapitel ${i+1}\n\n${ueberarbeitet}\n\n`;
+      aenderungen++;
+      log(`<span class="log-ok">✓ Kapitel ${i+1} fertig</span>`);
+    }
+
+    setProgress(100, 'Fertig.');
+    state.ergebnis = ergebnisText;
+    state.aenderungen = aenderungen;
+
+    // Ergebnis anzeigen
+    document.getElementById('resultStats').innerHTML =
+      `<span>${aenderungen} Kapitel überarbeitet</span>` +
+      `<span>${ergebnisText.split(/\s+/).length.toLocaleString('de')} Wörter</span>`;
+    document.getElementById('resultPreview').textContent = ergebnisText.substring(0, 1500) + '\n\n[...]';
+    document.getElementById('resultSection').style.display = '';
+
+  } catch(e) {
+    showError(e.message);
+  }
+
+  document.getElementById('startBtn').disabled = false;
+}
+
+function aufteilen(text) {
+  const kapitel = [];
+  let aktKap = 0, buf = [];
+
+  const flush = () => {
+    if(buf.length > 0 && aktKap > 0) {
+      kapitel.push({ nr: aktKap, text: buf.join('\n\n') });
+      buf = [];
+    }
+  };
+
+  for(const raw of text.split(/\n/)) {
+    const line = raw.trim();
+    if(/^(Kapitel|Chapter|KAPITEL|Kap\.)\s+\d+/i.test(line)) {
+      flush();
+      aktKap++;
+    } else if(line) {
+      buf.push(line);
+    }
+  }
+  flush();
+
+  // Wenn keine Kapitelstruktur: als ein Block behandeln
+  if(kapitel.length === 0) {
+    kapitel.push({ nr: 1, text: text });
+  }
+
+  return kapitel;
+}
+
+// ═══════════════════════════════════════════════════════
+// WORD DOWNLOAD (einfach als .txt mit .docx Endung)
+// ═══════════════════════════════════════════════════════
+function downloadDocx() {
+  if(!state.ergebnis) return;
+
+  // Einfacher Text-Download — für echtes DOCX bräuchten wir eine Bibliothek
+  const blob = new Blob([state.ergebnis], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const datum = new Date().toISOString().slice(0,10);
+  a.download = `Manuskript_ueberarbeitet_${datum}.txt`;
+  a.click();
+
+  // Hinweis
+  setTimeout(() => {
+    const preview = document.getElementById('resultPreview');
+    preview.textContent = '💡 Tipp: Die Datei ist als .txt gespeichert. Öffne sie in Word und speichere als .docx.\n\n' + state.ergebnis.substring(0, 1200) + '\n\n[...]';
+  }, 500);
+}
+
+function nochmal() {
+  state.ergebnis = '';
+  document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function setProgress(pct, text) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  log(text);
+}
+
+function log(msg) {
+  const el = document.getElementById('progressLog');
+  el.innerHTML += `<div>${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.style.display = '';
+  box.innerHTML = `✗ Fehler: ${msg}<br><br>Mögliche Ursachen:<br>· API-Schlüssel ungültig oder abgelaufen<br>· Kein Guthaben auf dem API-Konto<br>· Internetverbindung unterbrochen`;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
